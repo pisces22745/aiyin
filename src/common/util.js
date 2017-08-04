@@ -1,19 +1,18 @@
 export default {
-  kilo: function (num) {
-    let [temp, tempStr, strArray, str] = [[], '', num.toString().split('.'), strArray[0]]
-    str = str.split('').reverse()
-    for (let i = 0; i < str.length; i++) {
-      if ((i + 1) % 3 === 0 && i + 1 !== str.length) {
-        temp.push(str[i])
-        temp.push(',')
-      } else {
-        temp.push(str[i])
-      }
+  getmatrix: function (a, b, c, d, e, f) {
+    var aa = Math.round(180 * Math.asin(a) / Math.PI);
+    var bb = Math.round(180 * Math.acos(b) / Math.PI);
+    var cc = Math.round(180 * Math.asin(c) / Math.PI);
+    var dd = Math.round(180 * Math.acos(d) / Math.PI);
+    var deg = 0;
+    if (aa == bb || -aa == bb) {
+      deg = dd;
+    } else if (-aa + bb == 180) {
+      deg = 180 + cc;
+    } else if (aa + bb == 180) {
+      deg = 360 - cc || 360 - dd;
     }
-    tempStr = temp.reverse().join('')
-    if (strArray.length > 1) {
-      tempStr = tempStr + '.' + strArray[1]
-    }
-    return tempStr
+    return deg >= 360 ? 0 : deg;
+    //return (aa+','+bb+','+cc+','+dd);
   }
 }

@@ -6,7 +6,6 @@
       </div>
       <div class="diy-modify">
         <!--zc zoom control 缩放控制-->
-        <div class="zc active"></div>
       </div>
       <div class="diy-model-view"></div>
     </div>
@@ -26,7 +25,7 @@
 </template>
 <script>
   import $ from 'jquery'
-
+  import util from '../../common/util'
   export default {
     props: {
       imgList: [Array]
@@ -42,12 +41,10 @@
         let _this = this,
           count = this.count++,
           img = $('<img src="' + src + '" class="layer' + count + '" data-id="layer' + count + '" />'),
-          zc = '<div class="zc  active layer' + count + '" data-id="layer' + count + '">' +
-            '<div class="zc-handle tl"></div>' +
-            '<div class="zc-handle tr"></div>' +
-            '<div class="zc-handle bl"></div>' +
-            '<div class="zc-handle br"></div>' +
+          zc = '<div class="zc active layer' + count + '" data-id="layer' + count + '">' +
             '<div class="zc-handle rotate"></div>' +
+            '<div class="zc-handle delete"></div>' +
+            '<div class="zc-handle scale"></div>' +
             '</div>',
           $zc = $(zc);
         $('.diy-view').append(img)
@@ -86,7 +83,6 @@
                 top: (currentPoint.y - startPoint.y) + topStart
               })
             }
-
           });
         }).on('mouseup', function (e) {
           e.preventDefault();
@@ -98,7 +94,7 @@
         $('.zc[data-id=' + data_id + ']').addClass('active');
       },
       rotate: function (that, data_id) {
-        var div = $(that),
+        let div = $(that),
           centerX = div.width() / 2,
           centerY = div.height() / 2,
           left = div.position().left,
@@ -107,48 +103,24 @@
           pageY = event.pageY,
           dy = pageY - (top + centerY),
           dx = pageX - (left + centerX),
-          angle = 180 / Math.PI * (Math.atan2(dy, dx) + Math.PI / 2);
+          angle = 180 / Math.PI * (Math.atan2(dy, dx) + Math.PI / 4);
         $('.' + data_id).css({
           transform: 'rotate(' + angle + 'deg)'
         })
+        console.log(util.getmatrix($('.' + data_id).css('transform')))
+
       },
-      scale: function (direction, data_id, startStatus, moveEvent) {
+      scale: function (data_id, startStatus, moveEvent) {
         $('.zc').off('mousemove')
-        var distance = {
+        let distance = {
             x: moveEvent.pageX - startStatus.x,
             y: moveEvent.pageY - startStatus.y
           },
           $obj = $('.' + data_id)
-        switch (direction) {
-          case 0: //左上
-            $obj.css({
-              top: startStatus.top - (startStatus.height * (startStatus.width - distance.x) / startStatus.width - startStatus.height),
-              left: startStatus.left + distance.x,
-              width: startStatus.width - distance.x,
-              height: startStatus.height * (startStatus.width - distance.x) / startStatus.width
-            })
-            break;
-          case 1: //右上
-            $obj.css({
-              top: startStatus.top - (startStatus.height * (startStatus.width + distance.x) / startStatus.width - startStatus.height),
-              width: startStatus.width + distance.x,
-              height: startStatus.height * (startStatus.width + distance.x) / startStatus.width
-            })
-            break;
-          case 2: //左下
-            $obj.css({
-              left: startStatus.left - (startStatus.height * (startStatus.width - distance.x) / startStatus.width - startStatus.width),
-              width: startStatus.width - distance.x,
-              height: startStatus.height * (startStatus.width - distance.x) / startStatus.width
-            })
-            break;
-          case 3: //右下
-            $obj.css({
-              width: startStatus.width + distance.x,
-              height: startStatus.height * (startStatus.width + distance.x) / startStatus.width
-            })
-            break;
-        }
+        $obj.css({
+          width: startStatus.width + distance.x,
+          height: startStatus.height * (startStatus.width + distance.x) / startStatus.width
+        })
       }
     },
     created() {
@@ -158,9 +130,9 @@
         e.preventDefault();
         let src = $(this).attr('src')
         _this.addImgToDiy(src)
-      }).delegate('.tl', 'mousedown', function (e) {
+      }).delegate('.scale', 'mousedown', function (e) {
         e.preventDefault();
-        var $zc = $(this).parent(),
+        let $zc = $(this).parent(),
           data_id = $zc.attr('data-id'),
           startStatus = {
             left: $zc.position().left,
@@ -172,59 +144,11 @@
           }
         $('body').on('mousemove', function (e) {
           e.preventDefault();
-          _this.scale(0, data_id, startStatus, e);
-        })
-      }).delegate('.tr', 'mousedown', function (e) {
-        e.preventDefault();
-        var $zc = $(this).parent(),
-          data_id = $zc.attr('data-id'),
-          startStatus = {
-            left: $zc.position().left,
-            top: $zc.position().top,
-            width: $zc.width(),
-            height: $zc.height(),
-            x: e.pageX,
-            y: e.pageY
-          }
-        $('body').on('mousemove', function (e) {
-          e.preventDefault();
-          _this.scale(1, data_id, startStatus, e);
-        })
-      }).delegate('.bl', 'mousedown', function (e) {
-        e.preventDefault();
-        var $zc = $(this).parent(),
-          data_id = $zc.attr('data-id'),
-          startStatus = {
-            left: $zc.position().left,
-            top: $zc.position().top,
-            width: $zc.width(),
-            height: $zc.height(),
-            x: e.pageX,
-            y: e.pageY
-          }
-        $('body').on('mousemove', function (e) {
-          e.preventDefault();
-          _this.scale(2, data_id, startStatus, e);
-        })
-      }).delegate('.br', 'mousedown', function (e) {
-        e.preventDefault();
-        var $zc = $(this).parent(),
-          data_id = $zc.attr('data-id'),
-          startStatus = {
-            left: $zc.position().left,
-            top: $zc.position().top,
-            width: $zc.width(),
-            height: $zc.height(),
-            x: e.pageX,
-            y: e.pageY
-          }
-        $('body').on('mousemove', function (e) {
-          e.preventDefault();
-          _this.scale(3, data_id, startStatus, e);
+          _this.scale(data_id, startStatus, e);
         })
       }).delegate('.rotate', 'mousedown', function (e) {
         e.stopPropagation()
-        var $zc = $(this).parent(),
+        let $zc = $(this).parent(),
           data_id = $zc.attr('data-id');
         $('body').on('mousemove', function (e) {
           e.preventDefault();
@@ -234,7 +158,6 @@
         e.preventDefault();
         $('body').off('mousemove')
       })
-
     }
 
   }
@@ -283,11 +206,13 @@
         .zc {
           position: absolute;
           cursor: move;
+          width: 100%;
+          height: 100%;
           &.active {
             border: 1px dashed #1e90ff;
             .zc-handle {
-              width: 6px;
-              height: 6px;
+              width: 20px;
+              height: 20px;
               border: 2px solid rgba(255, 255, 255, .6);
               &.rotate:after {
                 width: 1px;
@@ -299,41 +224,46 @@
             position: absolute;
             border-radius: 50%;
             background-color: #1e90ff;
-            &.tl {
-              top: -5px;
-              left: -5px;
-              cursor: nw-resize;
-            }
-            &.tr {
-              top: -5px;
-              right: -5px;
-              cursor: ne-resize;
-            }
-
-            &.bl {
-              bottom: -5px;
-              left: -5px;
-              cursor: sw-resize;
-            }
-
-            &.br {
-              bottom: -5px;
-              right: -5px;
-              cursor: se-resize;
+            &.move {
+              top: -10px;
+              left: -10px;
+              background: #fff url("./icon2.png") no-repeat center center/100%;
+              /*cursor: nw-resize;*/
             }
             &.rotate {
-              top: -30px;
-              left: 50%;
-              /*cursor: all-scroll;*/
-              cursor: crosshair;
-              &:after {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 2px;
-                background-color: #1e90ff;
-              }
+              top: -10px;
+              right: -10px;
+              background: #fff url("./icon4.png") no-repeat center center/100%;
+              /*cursor: ne-resize;*/
             }
+            &.delete {
+              bottom: -10px;
+              left: -10px;
+              background: #fff url("./icon1.png") no-repeat center center/100%;
+              /*cursor: sw-resize;*/
+            }
+
+            &.scale {
+              bottom: -10px;
+              right: -10px;
+              -webkit-transform: rotate(45deg);
+              transform: rotate(45deg);
+              background: #fff url("./icon3.png") no-repeat center center/100%;
+              /*cursor: se-resize;*/
+            }
+            /*&.rotate {*/
+            /*top: -30px;*/
+            /*left: 50%;*/
+            /*!*cursor: all-scroll;*!*/
+            /*cursor: crosshair;*/
+            /*&:after {*/
+            /*content: '';*/
+            /*position: absolute;*/
+            /*top: 0;*/
+            /*left: 2px;*/
+            /*background-color: #1e90ff;*/
+            /*}*/
+            /*}*/
           }
         }
       }
