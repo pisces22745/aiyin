@@ -13,11 +13,6 @@
           'http://img06.tooopen.com/images/20160712/tooopen_sy_170083325566.jpg',
           'http://img06.tooopen.com/images/20160712/tooopen_sy_170083325566.jpg',
           'http://img06.tooopen.com/images/20160712/tooopen_sy_170083325566.jpg',
-          'http://img06.tooopen.com/images/20160712/tooopen_sy_170083325566.jpg',
-          'http://img06.tooopen.com/images/20160712/tooopen_sy_170083325566.jpg',
-          'http://img06.tooopen.com/images/20160712/tooopen_sy_170083325566.jpg',
-          'http://img06.tooopen.com/images/20160712/tooopen_sy_170083325566.jpg',
-          'http://img06.tooopen.com/images/20160712/tooopen_sy_170083325566.jpg',
           'http://img3.redocn.com/tupian/20150430/mantenghuawenmodianshiliangbeijing_3924704.jpg']
       }
     },
