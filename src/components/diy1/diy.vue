@@ -3,9 +3,17 @@
     <div class="diy" id="diy1">
       <div class="diy-view">
         <div class="diy-view-color"></div>
+        <img v-for="(item,index) in diyImgList" v-move :src="item.src" :class="item.classname"
+             :data-id="item.classname"/>
       </div>
       <div class="diy-modify">
         <!--zc zoom control 缩放控制-->
+        <div v-for="(item,index) in diyImgList" :class="['zc',item.classname,{'active': active==index}]"
+             :data-id="'layer'+index" v-move>
+          <div class="zc-handle rotate"></div>
+          <div class="zc-handle delete"></div>
+          <div class="zc-handle scale"></div>
+        </div>
       </div>
       <div class="diy-model-view"></div>
     </div>
@@ -16,7 +24,7 @@
           <ul>
             <li v-for="item in imgList">
               <div class="img">
-                <img :src="item"/>
+                <img :src="item" @click="addImgToDiy(item)"/>
               </div>
             </li>
           </ul>
@@ -42,7 +50,9 @@
     data() {
       return {
         count: 0,
-        color: ''
+        color: '',
+        diyImgList: [],
+        active: -1
       }
     },
     watch: {
@@ -51,23 +61,23 @@
       }
     },
     methods: {
-      addImgToDiy: function (src) {
-        $('.zc').removeClass('active')
-        let count = this.count++
-        let img = $('<img src="' + src + '" class="layer' + count + '" data-id="layer' + count + '" />')
-        let zc = '<div class="zc active layer' + count + '" data-id="layer' + count + '">' +
-          '<div class="zc-handle rotate"></div>' +
-          '<div class="zc-handle delete"></div>' +
-          '<div class="zc-handle scale"></div>' +
-          '</div>'
-        $('.diy-view').append(img)
-        $('.diy-modify').append(zc)
-        this.resetImgSize($(img))
+      drag: function (e) {
       },
-      resetImgSize: function (img) {
-        let className = $(img).attr('data-id')
-        $(img).width($(img).parent().width())
-        $('.zc[data-id=' + className + ']').width($(img).width()).height($(img).height())
+      addImgToDiy: function (src) {
+        let _this = this
+        this.active++
+        this.diyImgList.push({
+          src: src,
+          classname: 'layer' + this.active
+        })
+        setTimeout(function () {
+          _this.resetImgSize($('.layer' + _this.active))
+        }, 10)
+      },
+      resetImgSize: function ($img) {
+        let className = $img.attr('data-id')
+        $img.width($img.parent().width())
+        $('.zc[data-id=' + className + ']').width($img.width()).height($img.height())
       },
       moveImg: function () {
         let _this = this
@@ -117,7 +127,7 @@
               console.log($className)
               let w = $className.width()
               let h = $className.height()
-              let b = Math.atan(2 * h / w)
+              let b = Math.atan(h / w)
               let a = _this.getAngle(this)
               let left = w / 2 - Math.sin(Math.PI / 2 - a - b) * Math.sqrt((w / 2) * (w / 2) + h * h)
               let top = Math.cos(Math.PI / 2 - a - b) * Math.sqrt((w / 2) * (w / 2) + h * h)
@@ -165,56 +175,94 @@
           width: startStatus.width + distance.x,
           height: startStatus.height * (startStatus.width + distance.x) / startStatus.width
         })
-      },
-      delete: function () {
-        console.log(323)
       }
     },
     mounted() {
-      let _this = this
-      this.moveImg()
-      $('body').delegate('.toolbar img', 'click', function (e) { // 添加图片到编辑区
-        e.preventDefault()
-        let src = $(this).attr('src')
-        _this.addImgToDiy(src)
-      }).delegate('.scale', 'mousedown', function (e) {
-        e.preventDefault()
-        let $zc = $(this).parent()
-        let dataId = $zc.attr('data-id')
-        let startStatus = {
-          left: $zc.position().left,
-          top: $zc.position().top,
-          width: $zc.width(),
-          height: $zc.height(),
-          x: e.pageX,
-          y: e.pageY
+//      let _this = this
+//      this.moveImg()
+//      $('body').delegate('.toolbar img', 'click', function (e) { // 添加图片到编辑区
+//        e.preventDefault()
+//        let src = $(this).attr('src')
+//        _this.addImgToDiy(src)
+//      }).delegate('.scale', 'mousedown', function (e) {
+//        e.preventDefault()
+//        let $zc = $(this).parent()
+//        let dataId = $zc.attr('data-id')
+//        let startStatus = {
+//          left: $zc.position().left,
+//          top: $zc.position().top,
+//          width: $zc.width(),
+//          height: $zc.height(),
+//          x: e.pageX,
+//          y: e.pageY
+//        }
+//        $('body').on('mousemove', function (e) {
+//          e.preventDefault()
+//          _this.scale(dataId, startStatus, e)
+//        })
+//      }).delegate('.rotate', 'mousedown', function (e) {
+//        e.stopPropagation()
+//        let $zc = $(this).parent()
+//        let dataId = $zc.attr('data-id')
+//        $('body').on('mousemove', function (e) {
+//          e.preventDefault()
+//          _this.rotate(this, dataId)
+//        })
+//      }).delegate('.delete', 'click', function (e) {
+//        e.preventDefault()
+//        let $zc = $(this).parent()
+//        let dataId = $zc.attr('data-id')
+//        $('.' + dataId).remove()
+//      }).on('mouseup', function (e) {
+//        e.preventDefault()
+//        $('body').off('mousemove')
+//      })
+//
+//      $('.wrapper .title').on('click', function (e) {
+//        e.preventDefault()
+//        $(this).siblings('.content').slideToggle(200)
+//      })
+    },
+    directives: {
+      'move': {
+        bind: function (el, binding, vnode) {
+          let _this = this
+          $(el).on('mousedown', function (e) {
+            e.preventDefault()
+            let dataId = $(this).attr('data-id')
+            let startPoint = {
+              x: e.pageX,
+              y: e.pageY
+            }
+            let leftStart = $(this).position().left
+            let topStart = $(this).position().top
+            _this.activation(dataId)
+            $(this).on('mousemove', function (e) {
+              e.preventDefault()
+              if ($(this).hasClass('active')) {
+                let currentPoint = {
+                  x: e.pageX,
+                  y: e.pageY
+                }
+                let className = $(this).attr('data-id')
+                $('.' + className).css({
+                  left: (currentPoint.x - startPoint.x) + leftStart,
+                  top: (currentPoint.y - startPoint.y) + topStart
+                })
+              }
+            })
+          }).on('mouseup', function (e) {
+            e.preventDefault()
+            $('.zc').off('mousemove')
+          })
+        },
+        inserted: function () {
+          console.log(333)
+        },
+        update: function (value, oldValue) {
+          console.log('move2')
         }
-        $('body').on('mousemove', function (e) {
-          e.preventDefault()
-          _this.scale(dataId, startStatus, e)
-        })
-      }).delegate('.rotate', 'mousedown', function (e) {
-        e.stopPropagation()
-        let $zc = $(this).parent()
-        let dataId = $zc.attr('data-id')
-        $('body').on('mousemove', function (e) {
-          e.preventDefault()
-          _this.rotate(this, dataId)
-        })
-      }).delegate('.delete', 'click', function (e) {
-        e.preventDefault()
-        let $zc = $(this).parent()
-        let dataId = $zc.attr('data-id')
-        $('.' + dataId).remove()
-      }).on('mouseup', function (e) {
-        e.preventDefault()
-        $('body').off('mousemove')
-      })
-
-      $('.wrapper .title').on('click', function (e) {
-        e.preventDefault()
-        $(this).siblings('.content').slideToggle(200)
-      })
+      }
     },
     components: {
       colorPicker
