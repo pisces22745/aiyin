@@ -4,7 +4,7 @@
   </div>
 </template>
 <script>
-  import diy from '@/components/diy1/diy'
+  import diy from '@/components/diy/diy'
 
   export default {
     data() {

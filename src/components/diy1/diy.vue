@@ -2,7 +2,7 @@
   <div class="diy-wrapper">
     <div class="diy" id="diy1">
       <div class="diy-view">
-        <div class="diy-view-white"></div>
+        <div class="diy-view-color"></div>
       </div>
       <div class="diy-modify">
         <!--zc zoom control 缩放控制-->
@@ -45,6 +45,11 @@
         color: ''
       }
     },
+    watch: {
+      color: function (val, oldval) {
+        $('.diy-view-color').css('background-color', val)
+      }
+    },
     methods: {
       addImgToDiy: function (src) {
         $('.zc').removeClass('active')
@@ -75,7 +80,6 @@
           }
           let leftStart = $(this).position().left
           let topStart = $(this).position().top
-          console.log(leftStart, topStart)
           _this.activation(dataId)
           $(this).on('mousemove', function (e) {
             e.preventDefault()
@@ -86,8 +90,40 @@
               }
               let className = $(this).attr('data-id')
               $('.' + className).css({
-                left: (currentPoint.x - startPoint.x) * Math.cos(_this.getAngle(this)) + leftStart,
-                top: (currentPoint.y - startPoint.y) * Math.sin(_this.getAngle(this)) + topStart
+                left: (currentPoint.x - startPoint.x) + leftStart,
+                top: (currentPoint.y - startPoint.y) + topStart
+              })
+            }
+          })
+        }).on('mouseup', function (e) {
+          e.preventDefault()
+          $('.zc').off('mousemove')
+        })
+      },
+      moveImg1: function () {
+        let _this = this
+        $('body').delegate('.zc', 'mousedown', function (e) {
+          e.preventDefault()
+          let dataId = $(this).attr('data-id')
+//          let startPoint = {
+//            x: e.pageX,
+//            y: e.pageY
+//          }
+          _this.activation(dataId)
+          $(this).on('mousemove', function (e) {
+            e.preventDefault()
+            if ($(this).hasClass('active')) {
+              let $className = $('.' + $(this).attr('data-id'))
+              console.log($className)
+              let w = $className.width()
+              let h = $className.height()
+              let b = Math.atan(2 * h / w)
+              let a = _this.getAngle(this)
+              let left = w / 2 - Math.sin(Math.PI / 2 - a - b) * Math.sqrt((w / 2) * (w / 2) + h * h)
+              let top = Math.cos(Math.PI / 2 - a - b) * Math.sqrt((w / 2) * (w / 2) + h * h)
+              $className.css({
+                left: left,
+                top: top
               })
             }
           })
@@ -129,6 +165,9 @@
           width: startStatus.width + distance.x,
           height: startStatus.height * (startStatus.width + distance.x) / startStatus.width
         })
+      },
+      delete: function () {
+        console.log(323)
       }
     },
     mounted() {
@@ -162,6 +201,11 @@
           e.preventDefault()
           _this.rotate(this, dataId)
         })
+      }).delegate('.delete', 'click', function (e) {
+        e.preventDefault()
+        let $zc = $(this).parent()
+        let dataId = $zc.attr('data-id')
+        $('.' + dataId).remove()
       }).on('mouseup', function (e) {
         e.preventDefault()
         $('body').off('mousemove')
@@ -204,11 +248,10 @@
       .diy-view {
         z-index: 1;
         overflow: hidden;
-        .diy-view-white {
+        .diy-view-color {
           position: absolute;
           width: 100%;
           height: 100%;
-          /*background-color: #fff;*/
         }
         img {
           position: absolute;
@@ -301,17 +344,20 @@
       width: 100px;
       padding: 10px;
       border: 1px solid #eee;
+      -webkit-box-shadow: 0 0 10px #eee;
+      box-shadow: 0 0 10px #eee;
       background-color: rgba(255, 255, 255, .8);
       .wrapper {
+        margin-bottom: 10px;
         .title {
           text-align: center;
           padding: 6px 0;
           margin-bottom: 10px;
           background-color: #00afee;
           color: #fff;
+          cursor: pointer;
         }
         .content {
-          min-height: 15px;
           ul {
             li {
               img {
