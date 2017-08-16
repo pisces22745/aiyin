@@ -3,15 +3,15 @@
     <div class="diy" id="diy1">
       <div class="diy-view">
         <div class="diy-view-color"></div>
-        <img v-for="(item,index) in diyImgList" v-move :src="item.src" :class="item.classname"
+        <img v-for="(item,index) in diyImgList" :src="item.src" :class="item.classname"
              :data-id="item.classname"/>
       </div>
       <div class="diy-modify">
         <!--zc zoom control 缩放控制-->
         <div v-for="(item,index) in diyImgList" :class="['zc',item.classname,{'active': active==index}]"
-             :data-id="'layer'+index" v-move>
+             :data-id="'layer'+index">
           <div class="zc-handle rotate"></div>
-          <div class="zc-handle delete"></div>
+          <div class="zc-handle delete" @click="deleteImgToDiy(item)"></div>
           <div class="zc-handle scale"></div>
         </div>
       </div>
@@ -61,7 +61,42 @@
       }
     },
     methods: {
-      drag: function (e) {
+      beforeDiy: function () {
+        let _this = this
+        this.moveImg()
+        $('body').delegate('.scale', 'mousedown', function (e) {
+          e.preventDefault()
+          let $zc = $(this).parent()
+          let dataId = $zc.attr('data-id')
+          let startStatus = {
+            left: $zc.position().left,
+            top: $zc.position().top,
+            width: $zc.width(),
+            height: $zc.height(),
+            x: e.pageX,
+            y: e.pageY
+          }
+          $('body').on('mousemove', function (e) {
+            e.preventDefault()
+            _this.scale(dataId, startStatus, e)
+          })
+        }).delegate('.rotate', 'mousedown', function (e) {
+          e.stopPropagation()
+          let $zc = $(this).parent()
+          let dataId = $zc.attr('data-id')
+          $('body').on('mousemove', function (e) {
+            e.preventDefault()
+            _this.rotate(this, dataId)
+          })
+        }).on('mouseup', function (e) {
+          e.preventDefault()
+          $('body').off('mousemove')
+        })
+
+        $('.wrapper .title').on('click', function (e) {
+          e.preventDefault()
+          $(this).siblings('.content').slideToggle(200)
+        })
       },
       addImgToDiy: function (src) {
         let _this = this
@@ -74,10 +109,16 @@
           _this.resetImgSize($('.layer' + _this.active))
         }, 10)
       },
-      resetImgSize: function ($img) {
-        let className = $img.attr('data-id')
-        $img.width($img.parent().width())
-        $('.zc[data-id=' + className + ']').width($img.width()).height($img.height())
+      deleteImgToDiy: function (item) {
+        this.active--
+        let index = this.diyImgList.indexOf(item)
+        if (index > -1) {
+          this.diyImgList.splice(index, 1)
+        }
+      },
+      activation: function (dataId) {
+        $('.zc').removeClass('active')
+        $('.zc[data-id=' + dataId + ']').addClass('active')
       },
       moveImg: function () {
         let _this = this
@@ -88,8 +129,8 @@
             x: e.pageX,
             y: e.pageY
           }
-          let leftStart = $(this).position().left
-          let topStart = $(this).position().top
+          let leftStart = parseInt($(this).css('left'))
+          let topStart = parseInt($(this).css('top'))
           _this.activation(dataId)
           $(this).on('mousemove', function (e) {
             e.preventDefault()
@@ -100,8 +141,8 @@
               }
               let className = $(this).attr('data-id')
               $('.' + className).css({
-                left: (currentPoint.x - startPoint.x) + leftStart,
-                top: (currentPoint.y - startPoint.y) + topStart
+                left: leftStart + (currentPoint.x - startPoint.x),
+                top: topStart + (currentPoint.y - startPoint.y)
               })
             }
           })
@@ -110,43 +151,20 @@
           $('.zc').off('mousemove')
         })
       },
-      moveImg1: function () {
-        let _this = this
-        $('body').delegate('.zc', 'mousedown', function (e) {
-          e.preventDefault()
-          let dataId = $(this).attr('data-id')
-//          let startPoint = {
-//            x: e.pageX,
-//            y: e.pageY
-//          }
-          _this.activation(dataId)
-          $(this).on('mousemove', function (e) {
-            e.preventDefault()
-            if ($(this).hasClass('active')) {
-              let $className = $('.' + $(this).attr('data-id'))
-              console.log($className)
-              let w = $className.width()
-              let h = $className.height()
-              let b = Math.atan(h / w)
-              let a = _this.getAngle(this)
-              let left = w / 2 - Math.sin(Math.PI / 2 - a - b) * Math.sqrt((w / 2) * (w / 2) + h * h)
-              let top = Math.cos(Math.PI / 2 - a - b) * Math.sqrt((w / 2) * (w / 2) + h * h)
-              $className.css({
-                left: left,
-                top: top
-              })
-            }
-          })
-        }).on('mouseup', function (e) {
-          e.preventDefault()
-          $('.zc').off('mousemove')
-        })
+      resetImgSize: function ($img) {
+        let className = $img.attr('data-id')
+        $img.width($img.parent().width())
+        $('.zc[data-id=' + className + ']').width($img.width()).height($img.height())
       },
-      activation: function (dataId) {
-        $('.zc').removeClass('active')
-        $('.zc[data-id=' + dataId + ']').addClass('active')
+      getMatrix: function (className) {
+        let $obj = $('.' + className)
+        let matrix = $obj.css('transform') === 'none' ? 0 : ($obj.css('transform').split('(')[1]).split(',')
+        return {
+          cos: matrix[0],
+          sin: matrix[1]
+        }
       },
-      getAngle: function (that) {
+      rotate: function (that, dataId) {
         let div = $(that)
         let centerX = div.width() / 2
         let centerY = div.height() / 2
@@ -156,10 +174,7 @@
         let pageY = event.pageY
         let dy = pageY - (top + centerY)
         let dx = pageX - (left + centerX)
-        return 180 / Math.PI * (Math.atan2(dy, dx) + Math.PI / 4)
-      },
-      rotate: function (that, dataId) {
-        let angle = this.getAngle(that)
+        let angle = 180 / Math.PI * (Math.atan2(dy, dx) + Math.PI / 4)
         $('.' + dataId).css({
           transform: 'rotate(' + angle + 'deg)'
         })
@@ -178,91 +193,7 @@
       }
     },
     mounted() {
-//      let _this = this
-//      this.moveImg()
-//      $('body').delegate('.toolbar img', 'click', function (e) { // 添加图片到编辑区
-//        e.preventDefault()
-//        let src = $(this).attr('src')
-//        _this.addImgToDiy(src)
-//      }).delegate('.scale', 'mousedown', function (e) {
-//        e.preventDefault()
-//        let $zc = $(this).parent()
-//        let dataId = $zc.attr('data-id')
-//        let startStatus = {
-//          left: $zc.position().left,
-//          top: $zc.position().top,
-//          width: $zc.width(),
-//          height: $zc.height(),
-//          x: e.pageX,
-//          y: e.pageY
-//        }
-//        $('body').on('mousemove', function (e) {
-//          e.preventDefault()
-//          _this.scale(dataId, startStatus, e)
-//        })
-//      }).delegate('.rotate', 'mousedown', function (e) {
-//        e.stopPropagation()
-//        let $zc = $(this).parent()
-//        let dataId = $zc.attr('data-id')
-//        $('body').on('mousemove', function (e) {
-//          e.preventDefault()
-//          _this.rotate(this, dataId)
-//        })
-//      }).delegate('.delete', 'click', function (e) {
-//        e.preventDefault()
-//        let $zc = $(this).parent()
-//        let dataId = $zc.attr('data-id')
-//        $('.' + dataId).remove()
-//      }).on('mouseup', function (e) {
-//        e.preventDefault()
-//        $('body').off('mousemove')
-//      })
-//
-//      $('.wrapper .title').on('click', function (e) {
-//        e.preventDefault()
-//        $(this).siblings('.content').slideToggle(200)
-//      })
-    },
-    directives: {
-      'move': {
-        bind: function (el, binding, vnode) {
-          let _this = this
-          $(el).on('mousedown', function (e) {
-            e.preventDefault()
-            let dataId = $(this).attr('data-id')
-            let startPoint = {
-              x: e.pageX,
-              y: e.pageY
-            }
-            let leftStart = $(this).position().left
-            let topStart = $(this).position().top
-            _this.activation(dataId)
-            $(this).on('mousemove', function (e) {
-              e.preventDefault()
-              if ($(this).hasClass('active')) {
-                let currentPoint = {
-                  x: e.pageX,
-                  y: e.pageY
-                }
-                let className = $(this).attr('data-id')
-                $('.' + className).css({
-                  left: (currentPoint.x - startPoint.x) + leftStart,
-                  top: (currentPoint.y - startPoint.y) + topStart
-                })
-              }
-            })
-          }).on('mouseup', function (e) {
-            e.preventDefault()
-            $('.zc').off('mousemove')
-          })
-        },
-        inserted: function () {
-          console.log(333)
-        },
-        update: function (value, oldValue) {
-          console.log('move2')
-        }
-      }
+      this.beforeDiy()
     },
     components: {
       colorPicker
@@ -334,19 +265,17 @@
               top: -10px;
               left: -10px;
               background: #fff url("./icon2.png") no-repeat center center/100%;
-              /*cursor: nw-resize;*/
             }
             &.rotate {
               top: -10px;
               right: -10px;
               background: #fff url("./icon4.png") no-repeat center center/100%;
-              /*cursor: ne-resize;*/
             }
             &.delete {
               bottom: -10px;
               left: -10px;
               background: #fff url("./icon1.png") no-repeat center center/100%;
-              /*cursor: sw-resize;*/
+              cursor: pointer;
             }
 
             &.scale {
@@ -355,21 +284,7 @@
               -webkit-transform: rotate(45deg);
               transform: rotate(45deg);
               background: #fff url("./icon3.png") no-repeat center center/100%;
-              /*cursor: se-resize;*/
             }
-            /*&.rotate {*/
-            /*top: -30px;*/
-            /*left: 50%;*/
-            /*!*cursor: all-scroll;*!*/
-            /*cursor: crosshair;*/
-            /*&:after {*/
-            /*content: '';*/
-            /*position: absolute;*/
-            /*top: 0;*/
-            /*left: 2px;*/
-            /*background-color: #1e90ff;*/
-            /*}*/
-            /*}*/
           }
         }
       }
